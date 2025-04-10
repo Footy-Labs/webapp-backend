@@ -56,5 +56,18 @@ Before you begin, ensure you have the following installed:
 
 ## Configuration
 
-1.  **Excel Data Files:**
+1.  **Database Credentials:**
+    This script needs credentials to connect to the Supabase database. The recommended way is using environment variables.
+
+    *   Create a file named `.env` in the root directory of the project (`webapp-backend/`).
+    *   Add the following lines to the `.env` file, replacing the placeholders with the actual Supabase database credentials:
+        ```dotenv
+        SUPABASE_DB_USER="postgres"
+        SUPABASE_DB_PASSWORD="YOUR_DB_PASSWORD" # Replace with the actual password
+        SUPABASE_DB_HOST="db.xxxxxxxxxx.supabase.co" # Replace with your DB Host
+        SUPABASE_DB_NAME="postgres"
+        ```
+    *   **IMPORTANT:** Ensure the `.env` file is listed in your `.gitignore` file (it should be by default) so you **never commit your credentials** to Git.
+
+2.  **Excel Data Files:**
     Place the downloaded Wyscout player data Excel files (`.xlsx` format) inside the `excel_sheets_players/` directory. The `load_and_concatenate_player_excels` function will automatically find and process all `.xlsx` files within this folder.
