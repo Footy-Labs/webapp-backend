@@ -1,0 +1,8 @@
+# Ignore IDE settings
+.idea/
+
+# Ignore virtual environments
+venv/
+
+# Ignore environment variable secrets
+.env
