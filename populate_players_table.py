@@ -23,11 +23,11 @@ SUPABASE_DB_NAME = os.getenv("SUPABASE_DB_NAME")
 # Create the connection URL
 url_object = URL.create(
     "postgresql+psycopg2",
-    username=SUPABASE_DB_USER,
-    password=SUPABASE_DB_PASSWORD,
-    host=SUPABASE_DB_HOST,
+    username="postgres",
+    password="k72WCg@G8$!a*Zn",
+    host="db.jbqljjyctbsyawijlxfa.supabase.co",
     port=5432,
-    database=SUPABASE_DB_NAME
+    database="postgres"
 )
 engine = create_engine(url_object)
 
