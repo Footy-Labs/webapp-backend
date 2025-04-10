@@ -33,17 +33,28 @@ engine = create_engine(url_object)
 
 # ===================== 1) Load & Process Player Excel Files =====================
 print("Loading player Excel files...")
-players = load_and_concatenate_player_excels(directory_path="excel_sheets_players")
-print(f"Loaded {players.shape[0]} rows and {players.shape[1]} columns.\n")
+players_match_data = load_and_concatenate_player_excels(directory_path=r"Data\Player Match Data")
+print(f"Loaded {players_match_data.shape[0]} rows and {players_match_data.shape[1]} columns.\n")
+
+# Loading A lyga Player General Data
+players_general_data = load_and_concatenate_player_excels(directory_path=r"Data\Player General Data")
+
+if players_general_data.shape[0] < 150:
+    print(f"❌ Not enough data: only {players_general_data.shape[0]} rows found. Minimum required is 150.")
+
+# Create a mapping from 'Player' to 'Position' based on the general data
+position_map = players_general_data.set_index("Player")["Position"]
+
+# Overwrite the 'Position' column in the match data using this mapping
+players_match_data["Position"] = players_match_data["Player"].map(position_map)
 
 print("Processing derived columns and mapping simplified positions...")
-players = process_columns(players, cleaned_wyscout_mapping)
-players = map_simplified_position(players)
+players_match_data = process_columns(players_match_data, cleaned_wyscout_mapping)
+players_match_data = map_simplified_position(players_match_data)
 print("Processing complete.\n")
 
 print("Sample data after processing:")
-print(players.sample(5))
-print()
+print(players_match_data.sample(3))
 
 # ===================== 1.5) Append New Percentile Columns and Merge Back =====================
 six_metrics_with_legend = {
@@ -136,10 +147,10 @@ def add_ranking_columns_to_full_df(players: pd.DataFrame, six_metrics_with_legen
             players_with_rank.loc[ranking_df.index, col] = ranking_df[col]
     return players_with_rank
 
-players = add_ranking_columns_to_full_df(players, six_metrics_with_legend)
+players_match_data = add_ranking_columns_to_full_df(players_match_data, six_metrics_with_legend)
 print("Merged ranked DataFrame sample:")
-print(players.sample(5))
-print("Final DataFrame shape after merging ranking columns:", players.shape)
+print(players_match_data.sample(5))
+print("Final DataFrame shape after merging ranking columns:", players_match_data.shape)
 
 # ===================== 2) Retrieve Clubs Mapping from Supabase =====================
 print("Retrieving clubs mapping from Supabase...")
@@ -148,7 +159,6 @@ with engine.connect() as conn:
 clubs_map = dict(zip(clubs_df['name'], clubs_df['id']))
 print("Clubs mapping retrieved:")
 print(clubs_map)
-print()
 
 # ===================== 3) Build Insertion DataFrame =====================
 print("Building insertion DataFrame for 'players' table...")
@@ -161,10 +171,10 @@ def build_full_stats_dict(row):
     return {k: clean_nan(v) for k, v in row.to_dict().items()}
 
 insert_df = pd.DataFrame()
-insert_df["name"] = players["Player"]
-insert_df["club_id"] = players["Team"].apply(lambda team: clubs_map.get(team))
-insert_df["position"] = players["Simplified Position"]
-insert_df["stats"] = players.apply(build_full_stats_dict, axis=1)
+insert_df["name"] = players_match_data["Player"]
+insert_df["club_id"] = players_match_data["Team"].apply(lambda team: clubs_map.get(team))
+insert_df["position"] = players_match_data["Simplified Position"]
+insert_df["stats"] = players_match_data.apply(build_full_stats_dict, axis=1)
 
 print("Built insertion DataFrame. Sample:")
 print(insert_df.head())

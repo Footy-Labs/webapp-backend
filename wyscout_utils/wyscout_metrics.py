@@ -62,6 +62,20 @@ cleaned_wyscout_mapping = {
 }
 
 key_metrics_dict = {
+    'Goalkeeper': {
+        'Conceded goals per 90': ('Goalkeeping', 'blue'),
+        'Clean sheets': ('Goalkeeping', 'blue'),
+        'Save rate, %': ('Goalkeeping', 'blue'),
+        'Prevented goals per 90': ('Goalkeeping', 'blue'),
+        'Exits per 90': ('Goalkeeping', 'blue'),
+        'Shots against per 90': ('Goalkeeping', 'blue'),
+        'xG against per 90': ('Goalkeeping', 'blue'),
+        'Back passes received as GK per 90': ('Passing', 'green'),
+        'Passes per 90': ('Passing', 'green'),
+        'Accurate passes, %': ('Passing', 'green'),
+        'Long passes per 90': ('Passing', 'green'),
+        'Accurate long passes, %': ('Passing', 'green')
+    },
     'Full Back': {
         'Successful defensive actions per 90': ('Defense', 'blue'),
         'Defensive duels won, %': ('Defense', 'blue'),
@@ -77,19 +91,30 @@ key_metrics_dict = {
         'Accurate forward passes, %': ('Passing', 'green'),
         'Key passes per 90': ('Passing', 'green')
     },
-    'Centre Forward': {
-        'Non-penalty goals per 90': ('Attack', 'red'),
-        'xG per 90': ('Attack', 'red'),
-        'Shots on target per 90': ('Attack', 'red'),
-        'Touches in box per 90': ('Attack', 'red'),
-        'Successful dribbles per 90': ('Attack', 'red'),
-        'Assists per 90': ('Passing', 'green'),
-        'xA per 90': ('Passing', 'green'),
-        'Passes per 90': ('Passing', 'green'),
-        'Accurate passes, %': ('Passing', 'green'),
-        'Key passes per 90': ('Passing', 'green'),
+    'Centre Back': {
         'Interceptions per 90': ('Defense', 'blue'),
         'Duels won, %': ('Defense', 'blue'),
+        'Aerial duels won, %': ('Defense', 'blue'),
+        'Shots blocked per 90': ('Defense', 'blue'),
+        'Fouls per 90': ('Defense', 'blue'),
+        'Accurate passes, %': ('Passing', 'green'),
+        'Accurate passes to final third per 90': ('Passing', 'green'),
+        'Through passes per 90': ('Passing', 'green'),
+        'Goals per 90': ('Attack', 'red'),
+        'Assists per 90': ('Attack', 'red'),
+    },
+    'Defensive Midfielder': {
+        'Interceptions per 90': ('Defense', 'blue'),
+        'Sliding tackles per 90': ('Defense', 'blue'),
+        'Aerial duels per 90': ('Defense', 'blue'),
+        'Fouls suffered per 90': ('Defense', 'blue'),
+        'Progressive passes per 90': ('Passing', 'green'),
+        'Key passes per 90': ('Passing', 'green'),
+        'Passes to final third per 90': ('Passing', 'green'),
+        'Through passes per 90': ('Passing', 'green'),
+        'Progressive runs per 90': ('Attack', 'red'),
+        'Received passes per 90': ('Attack', 'red'),
+        'Touches in box per 90': ('Attack', 'red')
     },
     'Central Midfielder': {
         'Successful defensive actions per 90': ('Defense', 'blue'),
@@ -105,6 +130,18 @@ key_metrics_dict = {
         'xG per 90': ('Attack', 'red'),
         'Successful dribbles per 90': ('Attack', 'red')
     },
+    'Attacking Midfielder': {
+        'Successful defensive actions per 90': ('Defense', 'blue'),
+        'Defensive duels won, %': ('Defense', 'blue'),
+        'PAdj Interceptions': ('Defense', 'blue'),
+        'Fouls per 90': ('Defense', 'blue'),
+        'Accurate passes, %': ('Passing', 'green'),
+        'Accurate passes to penalty area per 90': ('Passing', 'green'),
+        'Accurate smart passes per 90': ('Passing', 'green'),
+        'Assist Overperformance': ('Passing', 'green'),
+        'Goals per 90': ('Attack', 'red'),
+        'Successful dribbles per 90': ('Attack', 'red')
+    },
     'Winger': {
         'Goals per 90': ('Attack', 'red'),
         'Non-penalty goals per 90': ('Attack', 'red'),
@@ -118,58 +155,20 @@ key_metrics_dict = {
         'Forward passes per 90': ('Passing', 'green'),
         'Accurate passes, %': ('Passing', 'green')
     },
-    'Defensive Midfielder': {
-        'Interceptions per 90': ('Defense', 'blue'),
-        'Sliding tackles per 90': ('Defense', 'blue'),
-        'Aerial duels per 90': ('Defense', 'blue'),
-        'Fouls suffered per 90': ('Defense', 'blue'),
-        'Progressive passes per 90': ('Passing', 'green'),
-        'Key passes per 90': ('Passing', 'green'),
-        'Passes to final third per 90': ('Passing', 'green'),
-        'Through passes per 90': ('Passing', 'green'),
-        'Progressive runs per 90': ('Attack', 'red'),
-        'Received passes per 90': ('Attack', 'red'),
-        'Touches in box per 90': ('Attack', 'red')
-    },
-    'Goalkeeper': {
-        'Conceded goals per 90': ('Goalkeeping', 'blue'),
-        'Clean sheets': ('Goalkeeping', 'blue'),
-        'Save rate, %': ('Goalkeeping', 'blue'),
-        'Prevented goals': ('Goalkeeping', 'blue'),
-        'Exits per 90': ('Goalkeeping', 'blue'),
-        'Shots against per 90': ('Goalkeeping', 'blue'),
-        'xG against per 90': ('Goalkeeping', 'blue'),
-        'Back passes received as GK per 90': ('Goalkeeping', 'green'),
+    'Centre Forward': {
+        'Non-penalty goals per 90': ('Attack', 'red'),
+        'xG per 90': ('Attack', 'red'),
+        'Shots on target per 90': ('Attack', 'red'),
+        'Touches in box per 90': ('Attack', 'red'),
+        'Successful dribbles per 90': ('Attack', 'red'),
+        'Assists per 90': ('Passing', 'green'),
+        'xA per 90': ('Passing', 'green'),
         'Passes per 90': ('Passing', 'green'),
         'Accurate passes, %': ('Passing', 'green'),
-        'Long passes per 90': ('Passing', 'green'),
-        'Accurate long passes, %': ('Passing', 'green')
-    },
-    'Attacking Midfielder': {
-        'Successful defensive actions per 90': ('Defense', 'blue'),
-        'Defensive duels won, %': ('Defense', 'blue'),
-        'PAdj Interceptions': ('Defense', 'blue'),
-        'Fouls per 90': ('Defense', 'blue'),
-        'Accurate passes, %': ('Passing', 'green'),
-        'Accurate passes to penalty area per 90': ('Passing', 'green'),
-        'Accurate smart passes per 90': ('Passing', 'green'),
-        'Assist Overperformance': ('Passing', 'green'),
-        'Goals per 90': ('Attack', 'red'),
-        'Successful dribbles per 90': ('Attack', 'red')
-    },
-    'Centre Back': {
+        'Key passes per 90': ('Passing', 'green'),
         'Interceptions per 90': ('Defense', 'blue'),
         'Duels won, %': ('Defense', 'blue'),
-        'Aerial duels won, %': ('Defense', 'blue'),
-        'Shots blocked per 90': ('Defense', 'blue'),
-        'Fouls per 90': ('Defense', 'blue'),
-        'Accurate passes, %': ('Passing', 'green'),
-        'Accurate passes to final third per 90': ('Passing', 'green'),
-        'Through passes per 90': ('Passing', 'green'),
-        'Goals per 90': ('Attack', 'red'),
-        'Assists per 90': ('Attack', 'red'),
-       }
-
+    }
     # Add key metrics for other positions as needed
 }
 

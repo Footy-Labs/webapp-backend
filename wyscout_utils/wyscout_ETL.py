@@ -29,7 +29,7 @@ def load_and_concatenate_games_excels(directory_path):
     # List all Excel files in the directory
     excel_files = [f for f in os.listdir(directory_path) if f.endswith('.xlsx')]
 
-    # Initialize an empty list to store cleaned data
+    # Initialise an empty list to store cleaned data
     df_list = []
 
     # Loop through each Excel file and load it into a DataFrame
@@ -159,13 +159,18 @@ def load_and_concatenate_games_excels(directory_path):
         'Average Shot Distance',
         'Average Pass Length',
         'PPDA'
-        # Basically PPDA reflects how many passes in the opponent defensive zone the opponent can make per one challenge. The lower this number, the better the team is doing high pressing.
     ]
 
     # Apply the renaming
     concatenated_df.columns = column_names
 
-    concatenated_df['Penalty Area Entries (Passes)'] = concatenated_df['Total Penalty Area Entries'] - (concatenated_df['Penalty Area Entries (Runs)'] + concatenated_df['Penalty Area Entries (Crosses)'])
+    # Convert Date to datetime if it's not already
+    concatenated_df['Date'] = pd.to_datetime(concatenated_df['Date'], errors='coerce')
+
+    # Compute additional columns
+    concatenated_df['Penalty Area Entries (Passes)'] = concatenated_df['Total Penalty Area Entries'] - (
+        concatenated_df['Penalty Area Entries (Runs)'] + concatenated_df['Penalty Area Entries (Crosses)']
+    )
 
     # Compute points earned based on 'Goals' and 'Conceded Goals'
     def calculate_points(row):
@@ -176,11 +181,21 @@ def load_and_concatenate_games_excels(directory_path):
         else:
             return 0
 
-    # Add the 'Points Earned' column
     concatenated_df['Points Earned'] = concatenated_df.apply(calculate_points, axis=1)
 
-    concatenated_df = concatenated_df.drop_duplicates()
+    # Drop duplicates and reset index before assigning match day
+    concatenated_df = concatenated_df.drop_duplicates().reset_index(drop=True)
 
+    # Function to sort each team's data in descending order (latest match first)
+    # and assign "Match Day" numbers in reverse order (highest number = latest match)
+    def assign_match_day(group):
+        group = group.sort_values(by='Date', ascending=False)
+        n = len(group)
+        group['Match Day'] = list(range(n, 0, -1))
+        return group
+
+    # Apply the grouping by 'Team', then reset the overall index after assigning match days
+    concatenated_df = concatenated_df.groupby('Team', group_keys=False).apply(assign_match_day)
     concatenated_df = concatenated_df.reset_index(drop=True)
 
     return concatenated_df
@@ -344,7 +359,5 @@ def map_simplified_position(full_data):
     full_data['Simplified Position'] = full_data['Position'].apply(map_position)
 
     return full_data
-
-
 
 
