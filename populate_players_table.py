@@ -3,9 +3,9 @@ import os
 from dotenv import load_dotenv
 
 # Import your custom modules
-from wyscout_utils.wyscout_ETL import load_and_concatenate_player_excels, process_columns, map_simplified_position
-from wyscout_utils.wyscout_metrics import cleaned_wyscout_mapping
-
+from wyscout_utils.wyscout_ETL import *
+from wyscout_utils.wyscout_metrics import *
+from wyscout_utils.wyscout_plots import *
 # SQLAlchemy imports for Supabase integration
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
