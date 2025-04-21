@@ -72,7 +72,7 @@ print(f"Inserting match-level data into '{MATCH_TABLE}'...")
 insert_df.to_sql(
     MATCH_TABLE,
     engine,
-    if_exists="append",
+    if_exists="replace",
     index=False,
     dtype={"stats": JSON()}
 )
