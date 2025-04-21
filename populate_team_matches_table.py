@@ -1,3 +1,5 @@
+import pandas as pd
+import os
 from dotenv import load_dotenv
 
 # Import your custom modules
@@ -43,7 +45,7 @@ clubs_map = dict(zip(clubs_df['name'], clubs_df['id']))
 print("Clubs mapping retrieved:")
 print(clubs_map, "\n")
 
-# ===================== 3) Build Insertion DataFrame =====================
+# ===================== 3) Build Insertion DataFrame for Match-Level Stats =====================
 def clean_nan(val):
     return None if pd.isna(val) else val
 
@@ -59,19 +61,56 @@ insert_df["competition"] = team_matches["Competition"]
 insert_df["team_id"] = team_matches["Team"].map(clubs_map)
 insert_df["stats"] = team_matches.apply(lambda row: build_stats_dict(row, meta_cols), axis=1)
 
-print("Built insertion DataFrame. Sample:")
+print("Built match-level insertion DataFrame. Sample:")
 print(insert_df.head(), "\n")
-print("Final insertion DataFrame shape:", insert_df.shape)
+print("Final shape:", insert_df.shape)
 
-# ===================== 4) Insert into Supabase =====================
-TABLE_NAME = "team_match_stats"
+# ===================== 4) Insert Match-Level Stats into Supabase =====================
+MATCH_TABLE = "team_match_stats"
 
-print(f"Inserting data into '{TABLE_NAME}' table with if_exists='append'...")
+print(f"Inserting match-level data into '{MATCH_TABLE}'...")
 insert_df.to_sql(
-    TABLE_NAME,
+    MATCH_TABLE,
     engine,
     if_exists="append",
     index=False,
     dtype={"stats": JSON()}
 )
-print(f"✅ Data inserted successfully into '{TABLE_NAME}'!")
+print(f"✅ Match-level data inserted into '{MATCH_TABLE}'!\n")
+
+# ===================== 5) Build and Upload Aggregated Team-Level Stats =====================
+print("Aggregating team metrics...")
+
+# Exclude columns we don't want to average
+exclude_cols = ["Duration", "Points Earned", "Match Day"]
+numeric_cols = team_matches.select_dtypes(include='number').columns.tolist()
+for col in exclude_cols:
+    if col in numeric_cols:
+        numeric_cols.remove(col)
+
+# Aggregate
+agg_dict = {col: 'mean' for col in numeric_cols}
+agg_dict['Points Earned'] = 'sum'
+team_metrics = team_matches.groupby('Team').agg(agg_dict).reset_index()
+
+# Add team_id
+team_metrics["team_id"] = team_metrics["Team"].map(clubs_map)
+# Reorder to place team_id first
+cols = ["team_id", "Team"] + [col for col in team_metrics.columns if col not in ["team_id", "Team"]]
+team_metrics = team_metrics[cols]
+
+print("Aggregated team-level stats:")
+print(team_metrics.head(), "\n")
+print("Final shape:", team_metrics.shape)
+
+# ===================== 6) Insert Aggregated Stats =====================
+AGG_TABLE = "team_metrics_aggregated"
+
+print(f"Inserting aggregated data into '{AGG_TABLE}'...")
+team_metrics.to_sql(
+    AGG_TABLE,
+    engine,
+    if_exists="replace",
+    index=False
+)
+print(f"✅ Aggregated team metrics inserted into '{AGG_TABLE}'!")
