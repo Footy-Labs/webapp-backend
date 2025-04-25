@@ -150,6 +150,19 @@ print("Merged ranked DataFrame sample:")
 print(players_match_data.sample(5))
 print("Final DataFrame shape after merging ranking columns:", players_match_data.shape)
 
+########## Adding contract expiry information #######################
+# Load the new contract info from Transfermarkt
+contract_updates = pd.read_excel(r"Data\Transfermarkt Player Data\contract_info.xlsx")
+
+# Create a mapping from player to updated contract date
+contract_map = dict(zip(contract_updates["Player"], contract_updates["Contract until"]))
+
+# Apply the update only where there is a match
+players_match_data["Contract expires"] = players_match_data.apply(
+    lambda row: contract_map.get(row["Player"], row["Contract expires"]),
+    axis=1
+)
+
 # ===================== 2) Retrieve Clubs Mapping from Supabase =====================
 print("Retrieving clubs mapping from Supabase...")
 with engine.connect() as conn:

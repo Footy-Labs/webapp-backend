@@ -1,5 +1,3 @@
-import pandas as pd
-import os
 from dotenv import load_dotenv
 
 # Import your custom modules
@@ -102,6 +100,21 @@ team_metrics = team_metrics[cols]
 print("Aggregated team-level stats:")
 print(team_metrics.head(), "\n")
 print("Final shape:", team_metrics.shape)
+
+# ===================== 5.5) Merge Goal Distribution =====================
+print("Merging goal distribution into team metrics...")
+
+# Load goal distribution Excel (already saved earlier)
+goal_dist_path = r"Data\Team Goal Distribution\Goal distribution A Lyga Teams 2025.xlsx"
+df_goal_distribution = pd.read_excel(goal_dist_path)
+
+# Make sure to rename "Team" index to a column if needed
+if df_goal_distribution.index.name == "Team":
+    df_goal_distribution = df_goal_distribution.reset_index()
+
+team_metrics = team_metrics.merge(df_goal_distribution, on="Team", how="left")
+
+print("✅ Goal distribution successfully merged into team_metrics.\n")
 
 # ===================== 6) Insert Aggregated Stats =====================
 AGG_TABLE = "team_metrics_aggregated"
