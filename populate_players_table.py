@@ -1,3 +1,4 @@
+import sqlalchemy
 from dotenv import load_dotenv
 
 # Import your custom modules
@@ -31,11 +32,11 @@ engine = create_engine(url_object)
 
 # ===================== 1) Load & Process Player Excel Files =====================
 print("Loading player Excel files...")
-players_match_data = load_and_concatenate_player_excels(directory_path=r"Data\Player Match Data")
+players_match_data = load_and_concatenate_player_excels(directory_path=r"Data/Player Match Data")
 print(f"Loaded {players_match_data.shape[0]} rows and {players_match_data.shape[1]} columns.\n")
 
 # Loading A lyga Player General Data
-players_general_data = load_and_concatenate_player_excels(directory_path=r"Data\Player General Data")
+players_general_data = load_and_concatenate_player_excels(directory_path=r"Data/Player General Data")
 
 if players_general_data.shape[0] < 150:
     print(f"❌ Not enough data: only {players_general_data.shape[0]} rows found. Minimum required is 150.")
@@ -150,9 +151,13 @@ print("Merged ranked DataFrame sample:")
 print(players_match_data.sample(5))
 print("Final DataFrame shape after merging ranking columns:", players_match_data.shape)
 
-########## Adding contract expiry information #######################
-# Load the new contract info from Transfermarkt
+
+# Load the contract update file
 contract_updates = pd.read_excel(r"Data\Transfermarkt Player Data\contract_info.xlsx")
+
+# Clean player names
+players_match_data["Player"] = players_match_data["Player"].str.strip()
+contract_updates["Player"] = contract_updates["Player"].str.strip()
 
 # Create a mapping from player to updated contract date
 contract_map = dict(zip(contract_updates["Player"], contract_updates["Contract until"]))
@@ -162,14 +167,37 @@ players_match_data["Contract expires"] = players_match_data.apply(
     lambda row: contract_map.get(row["Player"], row["Contract expires"]),
     axis=1
 )
-
-# ===================== 2) Retrieve Clubs Mapping from Supabase =====================
+# ===================== 2) Retrieve Clubs Mapping & last Loan Status from Supabase =====================
 print("Retrieving clubs mapping from Supabase...")
 with engine.connect() as conn:
     clubs_df = pd.read_sql("SELECT id, name FROM clubs;", conn)
 clubs_map = dict(zip(clubs_df['name'], clubs_df['id']))
 print("Clubs mapping retrieved:")
 print(clubs_map)
+
+print("Retrieving last loan status from Supabase...")
+
+with engine.connect() as conn:
+    # DISTINCT ON (name, club_id) + ORDER BY updated_at DESC
+    loan_sql = """
+    SELECT DISTINCT ON (name, club_id)
+      name,
+      club_id,
+      on_loan,
+      loan_visibility
+    FROM players
+    ORDER BY name, club_id, updated_at DESC
+    """
+    loan_df = pd.read_sql(loan_sql, conn)
+
+# Build a lookup:  { (name, club_id) : (on_loan, loan_visibility) }
+loan_map = {
+    (row["name"], row["club_id"]): (row["on_loan"], row["loan_visibility"])
+    for _, row in loan_df.iterrows()
+}
+
+print("Loaded loan_map:", loan_map)
+
 
 # ===================== 3) Build Insertion DataFrame =====================
 print("Building insertion DataFrame for 'players' table...")
@@ -187,6 +215,15 @@ insert_df["club_id"] = players_match_data["Team"].apply(lambda team: clubs_map.g
 insert_df["position"] = players_match_data["Simplified Position"]
 insert_df["stats"] = players_match_data.apply(build_full_stats_dict, axis=1)
 
+def lookup_loan_status(r):
+    # default: not on loan, no visibility
+    return loan_map.get((r["name"], r["club_id"]), (False, None))
+
+# unzip the tuple into two series
+insert_df["on_loan"], insert_df["loan_visibility"] = zip(
+    *insert_df.apply(lookup_loan_status, axis=1)
+)
+
 print("Built insertion DataFrame. Sample:")
 print(insert_df.head())
 print("Final insertion DataFrame shape:", insert_df.shape)
@@ -195,12 +232,18 @@ print("Final insertion DataFrame shape:", insert_df.shape)
 TABLE_NAME = "players"
 
 print(f"Inserting data into '{TABLE_NAME}' table with if_exists='append'...")
+
 insert_df.to_sql(
     TABLE_NAME,
     engine,
     if_exists="append",
     index=False,
-    dtype={"stats": JSON()}
+    dtype={
+      "stats": JSON(),
+      "on_loan": sqlalchemy.Boolean(),
+      "loan_visibility": sqlalchemy.Enum("clubs","agents","both", name="loan_visibility_enum")
+    }
 )
+
 print(f"Data inserted successfully into '{TABLE_NAME}' table!")
 
