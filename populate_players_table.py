@@ -224,6 +224,24 @@ insert_df["on_loan"], insert_df["loan_visibility"] = zip(
     *insert_df.apply(lookup_loan_status, axis=1)
 )
 
+# Extract wyscout id from stats json and put it in the dedicated wyscout_player_id column ---
+print("Extracting Wyscout ID from stats...")
+def get_wyscout_id(stats_dict):
+    # Safely extracts the 'id' key from the stats dictionary
+    if isinstance(stats_dict, dict):
+        # Convert to int/None, handle potential non-numeric IDs gracefully if needed
+        try:
+            val = stats_dict.get('id', None)
+            return int(val) if val is not None else None
+        except (ValueError, TypeError):
+             print(f"Warning: Could not convert Wyscout ID '{stats_dict.get('id')}' to int.")
+             return None # Or handle as text if IDs aren't always numbers
+    return None
+
+# Apply this function to the 'stats' column we just created in insert_df
+insert_df["wyscout_player_id"] = insert_df["stats"].apply(get_wyscout_id)
+print("✅ Wyscout ID column added.")
+
 print("Built insertion DataFrame. Sample:")
 print(insert_df.head())
 print("Final insertion DataFrame shape:", insert_df.shape)
