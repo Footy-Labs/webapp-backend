@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 
 # Import your custom modules
 from wyscout_utils.wyscout_ETL import *
-from wyscout_utils.wyscout_metrics import *
 from wyscout_utils.wyscout_plots import *
 
 # SQLAlchemy imports for Supabase integration

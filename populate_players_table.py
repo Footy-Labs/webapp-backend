@@ -52,7 +52,6 @@ players_match_data = process_columns(players_match_data, cleaned_wyscout_mapping
 players_match_data = map_simplified_position(players_match_data)
 print("Processing complete.\n")
 
-
 # Load the contract update file
 contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/contract_info.xlsx")
 
@@ -71,9 +70,6 @@ players_match_data["Contract expires"] = players_match_data.apply(
 
 print("Sample data after processing:")
 print(players_match_data.sample(3))
-
-
-
 
 # ===================== 1.5) Append New Percentile Columns and Merge Back =====================
 six_metrics_with_legend = {
