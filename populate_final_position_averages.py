@@ -31,7 +31,7 @@ engine = create_engine(url_object)
 
 # ===================== 1) Load Excel File =====================
 print("Loading A Lyga final position averages table...")
-file_path = r"Data\A Lyga Season Data\Final Position Table.xlsx"
+file_path = r"Data/A Lyga Season Data/Final Position Table.xlsx"
 df = pd.read_excel(file_path)
 print(f"Loaded {df.shape[0]} rows and {df.shape[1]} columns.\n")
 

@@ -32,7 +32,7 @@ engine = create_engine(url_object)
 
 # ===================== 1) Load Team Match Data =====================
 print("Loading team match data...")
-team_matches = load_and_concatenate_games_excels(r'Data\Team Match Data')
+team_matches = load_and_concatenate_games_excels(r'Data/Team Match Data')
 print(f"Loaded {team_matches.shape[0]} rows and {team_matches.shape[1]} columns.\n")
 
 # ===================== 2) Retrieve Clubs Mapping from Supabase =====================
@@ -105,7 +105,7 @@ print("Final shape:", team_metrics.shape)
 print("Merging goal distribution into team metrics...")
 
 # Load goal distribution Excel (already saved earlier)
-goal_dist_path = r"Data\Team Goal Distribution\Goal distribution A Lyga Teams 2025.xlsx"
+goal_dist_path = r"Data/Team Goal Distribution/Goal distribution A Lyga Teams 2025.xlsx"
 df_goal_distribution = pd.read_excel(goal_dist_path)
 
 # Make sure to rename "Team" index to a column if needed
