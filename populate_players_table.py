@@ -30,46 +30,112 @@ url_object = URL.create(
 )
 engine = create_engine(url_object)
 
+print("Retrieving clubs mapping from Supabase...")
+with engine.connect() as conn:
+    clubs_df = pd.read_sql("SELECT id, name, league FROM clubs;", conn)
+# Create a map from club name to club ID
+club_to_id_map = dict(zip(clubs_df['name'], clubs_df['id']))
+print("Club to ID mapping retrieved.")
+
+# Create a map from club name to league name
+club_to_league_map = dict(zip(clubs_df['name'], clubs_df['league']))
+print("Club to League mapping retrieved.")
+################# Lithuanian A Lyga part ###########################################
 # ===================== 1) Load & Process Player Excel Files =====================
 print("Loading player Excel files...")
-players_match_data = load_and_concatenate_player_excels(directory_path=r"Data/Player Match Data")
-print(f"Loaded {players_match_data.shape[0]} rows and {players_match_data.shape[1]} columns.\n")
+lithuanian_players_match_data = load_and_concatenate_player_excels(directory_path=r"Data/Player Match Data/Lithuania")
+print(f"Loaded {lithuanian_players_match_data.shape[0]} rows and {lithuanian_players_match_data.shape[1]} columns.\n")
+
+# Adding the league as that will be important for the "avg_percentile" column later
+lithuanian_players_match_data['League'] = lithuanian_players_match_data['Team'].map(club_to_league_map)
 
 # Loading A lyga Player General Data
-players_general_data = load_and_concatenate_player_excels(directory_path=r"Data/Player General Data")
+lithuanian_players_general_data = load_and_concatenate_player_excels(directory_path=r"Data/Player General Data/Lithuania")
 
-if players_general_data.shape[0] < 150:
-    print(f"❌ Not enough data: only {players_general_data.shape[0]} rows found. Minimum required is 150.")
+if lithuanian_players_general_data.shape[0] < 150:
+    print(f"❌ Not enough data: only {lithuanian_players_general_data.shape[0]} rows found. Minimum required is 150.")
 
 # Create a mapping from 'Player' to 'Position' based on the general data
-position_map = players_general_data.set_index("Player")["Position"]
+lithuanian_position_map = lithuanian_players_general_data.set_index("Player")["Position"]
 
 # Overwrite the 'Position' column in the match data using this mapping
-players_match_data["Position"] = players_match_data["Player"].map(position_map)
+lithuanian_players_match_data["Position"] = lithuanian_players_match_data["Player"].map(lithuanian_position_map)
 
 print("Processing derived columns and mapping simplified positions...")
-players_match_data = process_columns(players_match_data, cleaned_wyscout_mapping)
-players_match_data = map_simplified_position(players_match_data)
+lithuanian_players_match_data = process_columns(lithuanian_players_match_data, cleaned_wyscout_mapping)
+lithuanian_players_match_data = map_simplified_position(lithuanian_players_match_data)
 print("Processing complete.\n")
 
 # Load the contract update file
-contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/contract_info.xlsx")
+lithuanian_contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/Lithuania/contract_info.xlsx")
 
 # Clean player names
-players_match_data["Player"] = players_match_data["Player"].str.strip()
-contract_updates["Player"] = contract_updates["Player"].str.strip()
+lithuanian_players_match_data["Player"] = lithuanian_players_match_data["Player"].str.strip()
+lithuanian_contract_updates["Player"] = lithuanian_contract_updates["Player"].str.strip()
 
 # Create a mapping from player to updated contract date
-contract_map = dict(zip(contract_updates["Player"], contract_updates["Contract until"]))
+lithuanian_contract_map = dict(zip(lithuanian_contract_updates["Player"], lithuanian_contract_updates["Contract until"]))
 
 # Apply the update only where there is a match
-players_match_data["Contract expires"] = players_match_data.apply(
-    lambda row: contract_map.get(row["Player"], row["Contract expires"]),
-    axis=1
-)
+lithuanian_players_match_data["Contract expires"] = lithuanian_players_match_data.apply(
+    lambda row: lithuanian_contract_map.get(row["Player"], row["Contract expires"]), axis=1)
 
 print("Sample data after processing:")
-print(players_match_data.sample(3))
+print(lithuanian_players_match_data.sample(3))
+
+lithuanian_players_match_data[lithuanian_players_match_data['Player'] == 'A. Fofana']
+####################################### Data processing for Lithuania done ###################
+
+################# Latvian Virsliga  part ###########################################
+# ===================== 1) Load & Process Player Excel Files =====================
+print("Loading Latvian player Excel files...")
+latvian_players_match_data = load_and_concatenate_player_excels(directory_path=r"Data/Player Match Data/Latvia")
+
+print(f"Loaded {latvian_players_match_data.shape[0]} rows and {latvian_players_match_data.shape[1]} columns.\n")
+
+# Adding the league as that will be important for the "avg_percentile" column later
+latvian_players_match_data['League'] = latvian_players_match_data['Team'].map(club_to_league_map)
+
+# Loading Latvian Virsliga Player General Data
+latvian_players_general_data = load_and_concatenate_player_excels(directory_path=r"Data/Player General Data/Latvia")
+
+if latvian_players_general_data.shape[0] < 150:
+    print(f"❌ Not enough data: only {latvian_players_general_data.shape[0]} rows found. Minimum required is 150.")
+
+# Create a mapping from ('Player', 'Team') to 'Position' based on the general data
+latvian_position_map = latvian_players_general_data.set_index(['Player', 'Team'])["Position"]
+
+# Create a temporary MultiIndex from the match data's Player and Team columns
+temp_match_multi_index = pd.MultiIndex.from_frame(latvian_players_match_data[['Player', 'Team']])
+
+# Overwrite/create the 'Position' column in the match data using this mapping
+latvian_players_match_data["Position"] = temp_match_multi_index.map(latvian_position_map)
+#### to start here after inter-barca
+
+print("Processing derived columns and mapping simplified positions...")
+latvian_players_match_data = process_columns(latvian_players_match_data, cleaned_wyscout_mapping)
+latvian_players_match_data = map_simplified_position(latvian_players_match_data)
+print("Processing complete.\n")
+# start here once transfermarkt works again
+# # Load the contract update file
+# latvian_contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/Latvia/contract_info.xlsx")
+#
+# # Clean player names
+# latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
+# latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
+#
+# # Create a mapping from player to updated contract date
+# latvian_contract_map = dict(zip(latvian_contract_updates["Player"], latvian_contract_updates["Contract until"]))
+#
+# # Apply the update only where there is a match
+# latvian_players_match_data["Contract expires"] = latvian_players_match_data.apply(
+#     lambda row: latvian_contract_map.get(row["Player"], row["Contract expires"]), axis=1)
+#
+# print("Sample data after processing:")
+print(latvian_players_match_data.sample(3))
+################ Data processing for Latvia done ##################
+
+all_players_match_data = pd.concat([lithuanian_players_match_data, latvian_players_match_data], ignore_index=True)
 
 # ===================== 1.5) Append New Percentile Columns and Merge Back =====================
 six_metrics_with_legend = {
@@ -139,42 +205,117 @@ six_metrics_with_legend = {
     ]
 }
 
-def compute_ranking_for_position(players: pd.DataFrame, position: str, metric_pairs: list) -> pd.DataFrame:
-    pos_subset = players.loc[players['Simplified Position'] == position].copy()
-    # Work only on rows with complete data for these metrics
-    complete_idx = pos_subset.dropna(subset=[mp[0] for mp in metric_pairs]).index
-    ranking_df = pd.DataFrame(index=complete_idx)
+def compute_ranking_for_position(players_in_league_and_pos: pd.DataFrame, metric_pairs: list) -> pd.DataFrame:
+    """
+    Computes percentile rankings for a subset of players ALREADY filtered by league AND position.
+    players_in_league_and_pos: DataFrame subset for a specific league and position.
+    """
+    # Make sure metric names exist in the dataframe to avoid KeyError
+    valid_metric_pairs = []
     for metric_name, direction in metric_pairs:
-        if direction == 'high':
-            ranking_df[f'{metric_name}_percentile'] = pos_subset.loc[complete_idx, metric_name].rank(ascending=True, pct=True)
+        if metric_name in players_in_league_and_pos.columns:
+            valid_metric_pairs.append((metric_name, direction))
         else:
-            ranking_df[f'{metric_name}_percentile'] = pos_subset.loc[complete_idx, metric_name].rank(ascending=False, pct=True)
-    percentile_cols = [f'{m[0]}_percentile' for m in metric_pairs]
-    ranking_df['avg_percentile'] = ranking_df[percentile_cols].mean(axis=1)
+            print(f"Metric '{metric_name}' not found in current subset. Skipping for percentile calculation.")
+
+    if not valid_metric_pairs:
+        print(f"No valid metrics for ranking in this subset. Returning empty ranking_df.")
+        return pd.DataFrame(index=players_in_league_and_pos.index)  # Return empty DF with original index
+
+    metric_names_to_check = [mp[0] for mp in valid_metric_pairs]
+    print("metric_names_to_check is: ", metric_names_to_check)
+    complete_idx = players_in_league_and_pos.dropna(subset=metric_names_to_check).index
+
+    if complete_idx.empty:
+        print(f"No players with complete data for metrics: {metric_names_to_check}. Returning empty ranking_df.")
+        return pd.DataFrame(index=players_in_league_and_pos.index)  # Return empty DF with original index
+
+    ranking_df = pd.DataFrame(index=complete_idx)  # Use the index of rows with complete data
+
+    for metric_name, direction in valid_metric_pairs:
+        if direction == 'high':
+            ranking_df[f'{metric_name}_percentile'] = players_in_league_and_pos.loc[complete_idx, metric_name].rank(
+                ascending=True, pct=True)
+        else:  # 'low'
+            ranking_df[f'{metric_name}_percentile'] = players_in_league_and_pos.loc[complete_idx, metric_name].rank(
+                ascending=False, pct=True)
+
+    percentile_cols = [f'{mp[0]}_percentile' for mp in valid_metric_pairs]
+    if percentile_cols:  # Only calculate avg if there are percentile columns
+        ranking_df['avg_percentile'] = ranking_df[percentile_cols].mean(axis=1)
+    else:
+        ranking_df['avg_percentile'] = pd.NA  # Assign NA if no percentiles were calculated
+
     return ranking_df
 
-def add_ranking_columns_to_full_df(players: pd.DataFrame, six_metrics_with_legend: dict) -> pd.DataFrame:
-    players_with_rank = players.copy()
-    for position, metric_pairs in six_metrics_with_legend.items():
-        ranking_df = compute_ranking_for_position(players, position, metric_pairs)
-        # Update the original DataFrame with these new ranking columns for rows in this position
-        for col in ranking_df.columns:
-            players_with_rank.loc[ranking_df.index, col] = ranking_df[col]
+
+def add_ranking_columns_to_full_df(master_players_df: pd.DataFrame, metrics: dict) -> pd.DataFrame:
+    """
+    Adds percentile ranking columns to the main DataFrame, calculated per league and per position.
+    master_players_df: The combined DataFrame with data from all leagues.
+    """
+    if master_players_df.empty:
+        print("Input DataFrame for ranking is empty. Returning as is.")
+        return master_players_df
+
+    players_with_rank = master_players_df.copy()
+
+    # Initialize all potential new percentile columns with pd.NA
+    all_new_cols = ['avg_percentile']
+    for pos_metrics in metrics.values():
+        for metric_name, _ in pos_metrics:
+            all_new_cols.append(f'{metric_name}_percentile')
+    print("all_new_cols are", all_new_cols)
+
+    for new_col_name in set(all_new_cols):  # Use set to avoid duplicates
+        if new_col_name not in players_with_rank.columns:
+            players_with_rank[new_col_name] = pd.NA  # Initialize as float to hold NA or numbers
+
+    # Store all calculated ranking DataFrames and merge at the end for efficiency
+    all_rankings_list = []
+
+    # Group by 'League', then process positions within each league
+    for league_name, league_group_df in players_with_rank.groupby('League'):
+        print(f"Calculating rankings for League: {league_name} ({len(league_group_df)} players)")
+        for position, metric_pairs in metrics.items():
+            # Filter for the current position WITHIN the current league's data
+            pos_subset_in_league = league_group_df[league_group_df['Simplified Position'] == position].copy()
+            if pos_subset_in_league.empty:
+                print(f"No players in League '{league_name}' for Position '{position}'. Skipping.")
+                continue
+            print("running code for position ", position, "in league ", league_name)
+            ranking_df_for_pos_league = compute_ranking_for_position(pos_subset_in_league, metric_pairs)
+
+            if not ranking_df_for_pos_league.empty:
+                all_rankings_list.append(ranking_df_for_pos_league)
+
+    if all_rankings_list:
+        final_rankings_df = pd.concat(all_rankings_list)
+
+        for col_to_update in final_rankings_df.columns:
+            if col_to_update in players_with_rank.columns:
+                # Use pd.to_numeric for safer conversion to float, especially with pd.NA
+                players_with_rank[col_to_update] = pd.to_numeric(players_with_rank[col_to_update], errors='coerce')
+                final_rankings_df[col_to_update] = pd.to_numeric(final_rankings_df[col_to_update], errors='coerce')
+                players_with_rank.update(final_rankings_df[col_to_update])
+            else:
+                players_with_rank[col_to_update] = pd.to_numeric(final_rankings_df[col_to_update], errors='coerce')
+    else:
+        print("No ranking data generated across all leagues/positions to merge.")
     return players_with_rank
 
-players_match_data = add_ranking_columns_to_full_df(players_match_data, six_metrics_with_legend)
-print("Merged ranked DataFrame sample:")
-print(players_match_data.sample(5))
-print("Final DataFrame shape after merging ranking columns:", players_match_data.shape)
 
-# ===================== 2) Retrieve Clubs Mapping & last Loan Status from Supabase =====================
-print("Retrieving clubs mapping from Supabase...")
-with engine.connect() as conn:
-    clubs_df = pd.read_sql("SELECT id, name FROM clubs;", conn)
-clubs_map = dict(zip(clubs_df['name'], clubs_df['id']))
-print("Clubs mapping retrieved:")
-print(clubs_map)
-
+# After defining the functions, and after concatenating Lithuanian and Latvian data into 'all_players_match_data':
+if not all_players_match_data.empty:
+    print("\nStarting percentile calculations on combined data...")
+    all_players_match_data_ranked = add_ranking_columns_to_full_df(all_players_match_data, six_metrics_with_legend)
+    print("Percentile calculations complete.")
+    print("Merged ranked DataFrame sample:")
+    print(all_players_match_data_ranked.sample(5))
+else:
+    print("Combined data is empty, skipping ranking.")
+    all_players_match_data_ranked = pd.DataFrame()  # Ensure it's an empty DF
+# ===================== 2) Retrieve last Loan Status from Supabase =====================
 print("Retrieving last loan status from Supabase...")
 
 with engine.connect() as conn:
@@ -210,10 +351,10 @@ def build_full_stats_dict(row):
     return {k: clean_nan(v) for k, v in row.to_dict().items()}
 
 insert_df = pd.DataFrame()
-insert_df["name"] = players_match_data["Player"]
-insert_df["club_id"] = players_match_data["Team"].apply(lambda team: clubs_map.get(team))
-insert_df["position"] = players_match_data["Simplified Position"]
-insert_df["stats"] = players_match_data.apply(build_full_stats_dict, axis=1)
+insert_df["name"] = all_players_match_data_ranked["Player"]
+insert_df["club_id"] = all_players_match_data_ranked["Team"].apply(lambda team: club_to_id_map.get(team))
+insert_df["position"] = all_players_match_data_ranked["Simplified Position"]
+insert_df["stats"] = all_players_match_data_ranked.apply(build_full_stats_dict, axis=1)
 
 def lookup_loan_status(r):
     # default: not on loan, no visibility

@@ -18,7 +18,7 @@ def load_and_concatenate_player_excels(directory_path):
     # Concatenate all DataFrames vertically
     concatenated_df = pd.concat(df_list, ignore_index=True)
 
-    concatenated_df = concatenated_df.drop_duplicates()
+    concatenated_df = concatenated_df.drop_duplicates(subset=['Player', 'Team'], keep='first')
 
     concatenated_df = concatenated_df.reset_index(drop=True)
 
