@@ -80,10 +80,9 @@ lithuanian_contract_map = dict(zip(lithuanian_contract_updates["Player"], lithua
 lithuanian_players_match_data["Contract expires"] = lithuanian_players_match_data.apply(
     lambda row: lithuanian_contract_map.get(row["Player"], row["Contract expires"]), axis=1)
 
-print("Sample data after processing:")
+print("Sample Lithuanian data after processing:")
 print(lithuanian_players_match_data.sample(3))
 
-lithuanian_players_match_data[lithuanian_players_match_data['Player'] == 'A. Fofana']
 ####################################### Data processing for Lithuania done ###################
 
 ################# Latvian Virsliga  part ###########################################
@@ -116,22 +115,22 @@ print("Processing derived columns and mapping simplified positions...")
 latvian_players_match_data = process_columns(latvian_players_match_data, cleaned_wyscout_mapping)
 latvian_players_match_data = map_simplified_position(latvian_players_match_data)
 print("Processing complete.\n")
-# start here once transfermarkt works again
-# # Load the contract update file
-# latvian_contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/Latvia/contract_info.xlsx")
+
+# # Load the contract update file from Transfermarkt
+latvian_contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/Latvia/contract_info.xlsx")
 #
 # # Clean player names
-# latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
-# latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
+latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
+latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
 #
 # # Create a mapping from player to updated contract date
-# latvian_contract_map = dict(zip(latvian_contract_updates["Player"], latvian_contract_updates["Contract until"]))
+latvian_contract_map = dict(zip(latvian_contract_updates["Player"], latvian_contract_updates["Contract until"]))
 #
 # # Apply the update only where there is a match
-# latvian_players_match_data["Contract expires"] = latvian_players_match_data.apply(
-#     lambda row: latvian_contract_map.get(row["Player"], row["Contract expires"]), axis=1)
+latvian_players_match_data["Contract expires"] = latvian_players_match_data.apply(
+    lambda row: latvian_contract_map.get(row["Player"], row["Contract expires"]), axis=1)
 #
-# print("Sample data after processing:")
+print("Sample Latvian data after processing:")
 print(latvian_players_match_data.sample(3))
 ################ Data processing for Latvia done ##################
 
@@ -361,9 +360,7 @@ def lookup_loan_status(r):
     return loan_map.get((r["name"], r["club_id"]), (False, None))
 
 # unzip the tuple into two series
-insert_df["on_loan"], insert_df["loan_visibility"] = zip(
-    *insert_df.apply(lookup_loan_status, axis=1)
-)
+insert_df["on_loan"], insert_df["loan_visibility"] = zip(*insert_df.apply(lookup_loan_status, axis=1))
 
 # Extract wyscout id from stats json and put it in the dedicated wyscout_player_id column ---
 print("Extracting Wyscout ID from stats...")
@@ -392,17 +389,7 @@ TABLE_NAME = "players"
 
 print(f"Inserting data into '{TABLE_NAME}' table with if_exists='append'...")
 
-insert_df.to_sql(
-    TABLE_NAME,
-    engine,
-    if_exists="append",
-    index=False,
-    dtype={
-      "stats": JSON(),
-      "on_loan": sqlalchemy.Boolean(),
-      "loan_visibility": sqlalchemy.Enum("clubs","agents","both", name="loan_visibility_enum")
-    }
-)
+insert_df.to_sql(TABLE_NAME, engine, if_exists="append", index=False, dtype={"stats": JSON(), "on_loan": sqlalchemy.Boolean(),
+        "loan_visibility": sqlalchemy.Enum("clubs","agents","both", name="loan_visibility_enum")})
 
 print(f"Data inserted successfully into '{TABLE_NAME}' table!")
-

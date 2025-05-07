@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 
 # Import your custom modules
 from wyscout_utils.wyscout_ETL import *
-from wyscout_utils.wyscout_metrics import *
 from wyscout_utils.wyscout_plots import *
 
 # SQLAlchemy imports for Supabase integration
@@ -38,10 +37,14 @@ print(f"Loaded {team_matches.shape[0]} rows and {team_matches.shape[1]} columns.
 # ===================== 2) Retrieve Clubs Mapping from Supabase =====================
 print("Retrieving clubs mapping from Supabase...")
 with engine.connect() as conn:
-    clubs_df = pd.read_sql("SELECT id, name FROM clubs;", conn)
-clubs_map = dict(zip(clubs_df['name'], clubs_df['id']))
-print("Clubs mapping retrieved:")
-print(clubs_map, "\n")
+    clubs_df = pd.read_sql("SELECT id, name, league FROM clubs;", conn)
+# Create a map from club name to club ID
+club_to_id_map = dict(zip(clubs_df['name'], clubs_df['id']))
+print("Club to ID mapping retrieved.")
+
+# Create a map from club name to league name
+club_to_league_map = dict(zip(clubs_df['name'], clubs_df['league']))
+print("Club to League mapping retrieved.")
 
 # ===================== 3) Build Insertion DataFrame for Match-Level Stats =====================
 def clean_nan(val):
@@ -50,13 +53,13 @@ def clean_nan(val):
 def build_stats_dict(row, exclude_cols):
     return {k: clean_nan(v) for k, v in row.to_dict().items() if k not in exclude_cols}
 
-# Define which columns to preserve outside of stats
+# Define which columns to exclude from "stats" column
 meta_cols = ["Match", "Date", "Competition", "Team"]
 insert_df = pd.DataFrame()
 insert_df["match_id"] = team_matches["Match"]
 insert_df["date"] = pd.to_datetime(team_matches["Date"])
 insert_df["competition"] = team_matches["Competition"]
-insert_df["team_id"] = team_matches["Team"].map(clubs_map)
+insert_df["team_id"] = team_matches["Team"].map(club_to_id_map)
 insert_df["stats"] = team_matches.apply(lambda row: build_stats_dict(row, meta_cols), axis=1)
 
 print("Built match-level insertion DataFrame. Sample:")
@@ -92,9 +95,12 @@ agg_dict['Points Earned'] = 'sum'
 team_metrics = team_matches.groupby('Team').agg(agg_dict).reset_index()
 
 # Add team_id
-team_metrics["team_id"] = team_metrics["Team"].map(clubs_map)
+team_metrics["team_id"] = team_metrics["Team"].map(club_to_id_map)
+# Add league
+team_metrics["League"] = team_metrics["Team"].map(club_to_league_map)
+
 # Reorder to place team_id first
-cols = ["team_id", "Team"] + [col for col in team_metrics.columns if col not in ["team_id", "Team"]]
+cols = ["team_id", "Team", "League"] + [col for col in team_metrics.columns if col not in ["team_id", "Team", "League"]]
 team_metrics = team_metrics[cols]
 
 print("Aggregated team-level stats:")
