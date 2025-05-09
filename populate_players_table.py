@@ -314,30 +314,6 @@ if not all_players_match_data.empty:
 else:
     print("Combined data is empty, skipping ranking.")
     all_players_match_data_ranked = pd.DataFrame()  # Ensure it's an empty DF
-# ===================== 2) Retrieve last Loan Status from Supabase =====================
-print("Retrieving last loan status from Supabase...")
-
-with engine.connect() as conn:
-    # DISTINCT ON (name, club_id) + ORDER BY updated_at DESC
-    loan_sql = """
-    SELECT DISTINCT ON (name, club_id)
-      name,
-      club_id,
-      on_loan,
-      loan_visibility
-    FROM players
-    ORDER BY name, club_id, updated_at DESC
-    """
-    loan_df = pd.read_sql(loan_sql, conn)
-
-# Build a lookup:  { (name, club_id) : (on_loan, loan_visibility) }
-loan_map = {
-    (row["name"], row["club_id"]): (row["on_loan"], row["loan_visibility"])
-    for _, row in loan_df.iterrows()
-}
-
-print("Loaded loan_map:", loan_map)
-
 
 # ===================== 3) Build Insertion DataFrame =====================
 print("Building insertion DataFrame for 'players' table...")
@@ -355,12 +331,6 @@ insert_df["club_id"] = all_players_match_data_ranked["Team"].apply(lambda team: 
 insert_df["position"] = all_players_match_data_ranked["Simplified Position"]
 insert_df["stats"] = all_players_match_data_ranked.apply(build_full_stats_dict, axis=1)
 
-def lookup_loan_status(r):
-    # default: not on loan, no visibility
-    return loan_map.get((r["name"], r["club_id"]), (False, None))
-
-# unzip the tuple into two series
-insert_df["on_loan"], insert_df["loan_visibility"] = zip(*insert_df.apply(lookup_loan_status, axis=1))
 
 # Extract wyscout id from stats json and put it in the dedicated wyscout_player_id column ---
 print("Extracting Wyscout ID from stats...")
@@ -389,7 +359,6 @@ TABLE_NAME = "players"
 
 print(f"Inserting data into '{TABLE_NAME}' table with if_exists='append'...")
 
-insert_df.to_sql(TABLE_NAME, engine, if_exists="append", index=False, dtype={"stats": JSON(), "on_loan": sqlalchemy.Boolean(),
-        "loan_visibility": sqlalchemy.Enum("clubs","agents","both", name="loan_visibility_enum")})
+insert_df.to_sql(TABLE_NAME, engine, if_exists="append", index=False, dtype={"stats": JSON()})
 
 print(f"Data inserted successfully into '{TABLE_NAME}' table!")
