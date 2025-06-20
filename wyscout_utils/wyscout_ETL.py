@@ -361,3 +361,51 @@ def map_simplified_position(full_data):
     return full_data
 
 
+def compute_ranking_for_position(players_in_league_and_pos: pd.DataFrame, metric_pairs: list) -> pd.DataFrame:
+    """
+    Computes percentile rankings for a subset of players ALREADY filtered by league AND position.
+    players_in_league_and_pos: DataFrame subset for a specific league and position.
+    """
+    # Make sure metric names exist in the dataframe to avoid KeyError
+    valid_metric_pairs = []
+    for metric_name, direction in metric_pairs:
+        if metric_name in players_in_league_and_pos.columns:
+            valid_metric_pairs.append((metric_name, direction))
+        else:
+            print(f"Metric '{metric_name}' not found in current subset. Skipping for percentile calculation.")
+
+    if not valid_metric_pairs:
+        print(f"No valid metrics for ranking in this subset. Returning empty ranking_df.")
+        return pd.DataFrame(index=players_in_league_and_pos.index)  # Return empty DF with original index
+
+    metric_names_to_check = [mp[0] for mp in valid_metric_pairs]
+    print("metric_names_to_check is: ", metric_names_to_check)
+    complete_idx = players_in_league_and_pos.dropna(subset=metric_names_to_check, thresh=4).index
+
+    if complete_idx.empty:
+        print(f"No players with complete data for metrics: {metric_names_to_check}. Returning empty ranking_df.")
+        return pd.DataFrame(index=players_in_league_and_pos.index)  # Return empty DF with original index
+
+    ranking_df = pd.DataFrame(index=complete_idx)  # Use the index of rows with complete data
+
+    for metric_name, direction in valid_metric_pairs:
+        if direction == 'high':
+            ranking_df[f'{metric_name}_percentile'] = players_in_league_and_pos.loc[complete_idx, metric_name].rank(
+                ascending=True, pct=True)
+        else:  # 'low'
+            ranking_df[f'{metric_name}_percentile'] = players_in_league_and_pos.loc[complete_idx, metric_name].rank(
+                ascending=False, pct=True)
+
+    percentile_cols = [f'{mp[0]}_percentile' for mp in valid_metric_pairs]
+    if percentile_cols:  # Only calculate avg if there are percentile columns
+        ranking_df['avg_percentile'] = ranking_df[percentile_cols].mean(axis=1)
+    else:
+        ranking_df['avg_percentile'] = pd.NA  # Assign NA if no percentiles were calculated
+
+    return ranking_df
+
+
+
+
+
+

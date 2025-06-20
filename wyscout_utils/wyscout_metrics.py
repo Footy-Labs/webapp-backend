@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 cleaned_wyscout_mapping = {
     'General': [
         'Team', 'Position', 'Age', 'Market value', 'Contract expires',
@@ -171,5 +168,73 @@ key_metrics_dict = {
     }
     # Add key metrics for other positions as needed
 }
+
+six_metrics_with_legend = {
+    'Goalkeeper': [
+        ('Conceded goals per 90', 'low'),
+        ('Accurate passes, %', 'high'),
+        ('xG against per 90', 'low'),
+        ('Prevented goals per 90', 'high'),
+        ('Save rate, %', 'high'),
+        ('Exits per 90', 'high')
+    ],
+    'Full Back': [
+        ('Successful defensive actions per 90', 'high'),
+        ('Defensive duels won, %', 'high'),
+        ('Accurate crosses, %', 'high'),
+        ('Accurate passes, %', 'high'),
+        ('Key passes per 90', 'high'),
+        ('xA per 90', 'high')
+    ],
+    'Centre Back': [
+        ('Successful defensive actions per 90', 'high'),
+        ('Defensive duels won, %', 'high'),
+        ('Aerial duels won, %', 'high'),
+        ('Interceptions per 90', 'high'),
+        ('Accurate passes, %', 'high'),
+        ('Accurate passes to final third per 90', 'high')
+    ],
+    'Defensive Midfielder': [
+        ('Interceptions per 90', 'high'),
+        ('Sliding tackles per 90', 'high'),
+        ('Aerial duels won, %', 'high'),
+        ('Accurate progressive passes per 90', 'high'),
+        ('Accurate passes to final third per 90', 'high'),
+        ('Accurate passes to penalty area per 90', 'high')
+    ],
+    'Central Midfielder': [
+        ('Successful defensive actions per 90', 'high'),
+        ('Defensive duels won, %', 'high'),
+        ('Accurate passes, %', 'high'),
+        ('Accurate passes to final third per 90', 'high'),
+        ('Key passes per 90', 'high'),
+        ('xA per 90', 'high')
+    ],
+    'Attacking Midfielder': [
+        ('Defensive duels won, %', 'high'),
+        ('Successful defensive actions per 90', 'high'),
+        ('Accurate passes to penalty area per 90', 'high'),
+        ('Accurate smart passes per 90', 'high'),
+        ('Goals per 90', 'high'),
+        ('Successful dribbles per 90', 'high')
+    ],
+    'Winger': [
+        ('Non-penalty goals per 90', 'high'),
+        ('xG per 90', 'high'),
+        ('Shots on target per 90', 'high'),
+        ('Successful dribbles per 90', 'high'),
+        ('Assists per 90', 'high'),
+        ('xA per 90', 'high')
+    ],
+    'Centre Forward': [
+        ('Non-penalty goals per 90', 'high'),
+        ('xG per 90', 'high'),
+        ('Shots on target per 90', 'high'),
+        ('Touches in box per 90', 'high'),
+        ('xA per 90', 'high'),
+        ('Offensive duels won, %', 'high')
+    ]
+}
+
 
 

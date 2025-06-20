@@ -109,7 +109,6 @@ temp_match_multi_index = pd.MultiIndex.from_frame(latvian_players_match_data[['P
 
 # Overwrite/create the 'Position' column in the match data using this mapping
 latvian_players_match_data["Position"] = temp_match_multi_index.map(latvian_position_map)
-#### to start here after inter-barca
 
 print("Processing derived columns and mapping simplified positions...")
 latvian_players_match_data = process_columns(latvian_players_match_data, cleaned_wyscout_mapping)
@@ -118,14 +117,12 @@ print("Processing complete.\n")
 
 # # Load the contract update file from Transfermarkt
 latvian_contract_updates = pd.read_excel(r"Data/Transfermarkt Player Data/Latvia/contract_info.xlsx")
-#
 # # Clean player names
 latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
-latvian_players_match_data["Player"] = latvian_players_match_data["Player"].str.strip()
-#
+
 # # Create a mapping from player to updated contract date
 latvian_contract_map = dict(zip(latvian_contract_updates["Player"], latvian_contract_updates["Contract until"]))
-#
+
 # # Apply the update only where there is a match
 latvian_players_match_data["Contract expires"] = latvian_players_match_data.apply(
     lambda row: latvian_contract_map.get(row["Player"], row["Contract expires"]), axis=1)
@@ -137,117 +134,6 @@ print(latvian_players_match_data.sample(3))
 all_players_match_data = pd.concat([lithuanian_players_match_data, latvian_players_match_data], ignore_index=True)
 
 # ===================== 1.5) Append New Percentile Columns and Merge Back =====================
-six_metrics_with_legend = {
-    'Goalkeeper': [
-        ('Conceded goals per 90', 'low'),
-        ('Accurate passes, %', 'high'),
-        ('xG against per 90', 'low'),
-        ('Prevented goals per 90', 'high'),
-        ('Save rate, %', 'high'),
-        ('Exits per 90', 'high')
-    ],
-    'Full Back': [
-        ('Successful defensive actions per 90', 'high'),
-        ('Defensive duels won, %', 'high'),
-        ('Accurate crosses, %', 'high'),
-        ('Accurate passes, %', 'high'),
-        ('Key passes per 90', 'high'),
-        ('xA per 90', 'high')
-    ],
-    'Centre Back': [
-        ('Successful defensive actions per 90', 'high'),
-        ('Defensive duels won, %', 'high'),
-        ('Aerial duels won, %', 'high'),
-        ('Interceptions per 90', 'high'),
-        ('Accurate passes, %', 'high'),
-        ('Accurate passes to final third per 90', 'high')
-    ],
-    'Defensive Midfielder': [
-        ('Interceptions per 90', 'high'),
-        ('Sliding tackles per 90', 'high'),
-        ('Aerial duels won, %', 'high'),
-        ('Accurate progressive passes per 90', 'high'),
-        ('Accurate passes to final third per 90', 'high'),
-        ('Accurate passes to penalty area per 90', 'high')
-    ],
-    'Central Midfielder': [
-        ('Successful defensive actions per 90', 'high'),
-        ('Defensive duels won, %', 'high'),
-        ('Accurate passes, %', 'high'),
-        ('Accurate passes to final third per 90', 'high'),
-        ('Key passes per 90', 'high'),
-        ('xA per 90', 'high')
-    ],
-    'Attacking Midfielder': [
-        ('Defensive duels won, %', 'high'),
-        ('Successful defensive actions per 90', 'high'),
-        ('Accurate passes to penalty area per 90', 'high'),
-        ('Accurate smart passes per 90', 'high'),
-        ('Goals per 90', 'high'),
-        ('Successful dribbles per 90', 'high')
-    ],
-    'Winger': [
-        ('Non-penalty goals per 90', 'high'),
-        ('xG per 90', 'high'),
-        ('Shots on target per 90', 'high'),
-        ('Successful dribbles per 90', 'high'),
-        ('Assists per 90', 'high'),
-        ('xA per 90', 'high')
-    ],
-    'Centre Forward': [
-        ('Non-penalty goals per 90', 'high'),
-        ('xG per 90', 'high'),
-        ('Shots on target per 90', 'high'),
-        ('Touches in box per 90', 'high'),
-        ('xA per 90', 'high'),
-        ('Offensive duels won, %', 'high')
-    ]
-}
-
-def compute_ranking_for_position(players_in_league_and_pos: pd.DataFrame, metric_pairs: list) -> pd.DataFrame:
-    """
-    Computes percentile rankings for a subset of players ALREADY filtered by league AND position.
-    players_in_league_and_pos: DataFrame subset for a specific league and position.
-    """
-    # Make sure metric names exist in the dataframe to avoid KeyError
-    valid_metric_pairs = []
-    for metric_name, direction in metric_pairs:
-        if metric_name in players_in_league_and_pos.columns:
-            valid_metric_pairs.append((metric_name, direction))
-        else:
-            print(f"Metric '{metric_name}' not found in current subset. Skipping for percentile calculation.")
-
-    if not valid_metric_pairs:
-        print(f"No valid metrics for ranking in this subset. Returning empty ranking_df.")
-        return pd.DataFrame(index=players_in_league_and_pos.index)  # Return empty DF with original index
-
-    metric_names_to_check = [mp[0] for mp in valid_metric_pairs]
-    print("metric_names_to_check is: ", metric_names_to_check)
-    complete_idx = players_in_league_and_pos.dropna(subset=metric_names_to_check).index
-
-    if complete_idx.empty:
-        print(f"No players with complete data for metrics: {metric_names_to_check}. Returning empty ranking_df.")
-        return pd.DataFrame(index=players_in_league_and_pos.index)  # Return empty DF with original index
-
-    ranking_df = pd.DataFrame(index=complete_idx)  # Use the index of rows with complete data
-
-    for metric_name, direction in valid_metric_pairs:
-        if direction == 'high':
-            ranking_df[f'{metric_name}_percentile'] = players_in_league_and_pos.loc[complete_idx, metric_name].rank(
-                ascending=True, pct=True)
-        else:  # 'low'
-            ranking_df[f'{metric_name}_percentile'] = players_in_league_and_pos.loc[complete_idx, metric_name].rank(
-                ascending=False, pct=True)
-
-    percentile_cols = [f'{mp[0]}_percentile' for mp in valid_metric_pairs]
-    if percentile_cols:  # Only calculate avg if there are percentile columns
-        ranking_df['avg_percentile'] = ranking_df[percentile_cols].mean(axis=1)
-    else:
-        ranking_df['avg_percentile'] = pd.NA  # Assign NA if no percentiles were calculated
-
-    return ranking_df
-
-
 def add_ranking_columns_to_full_df(master_players_df: pd.DataFrame, metrics: dict) -> pd.DataFrame:
     """
     Adds percentile ranking columns to the main DataFrame, calculated per league and per position.
